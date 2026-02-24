@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getState, saveState, clearState } from './store'
+import { initRipple } from './ripple'
 import AvatarUpload     from './components/AvatarUpload'
 import CardDraw         from './components/CardDraw'
 import SystemChoice     from './components/SystemChoice'
@@ -10,6 +11,8 @@ import GameControls     from './components/GameControls'
 
 export default function App() {
   const [state, setState] = useState(getState)
+
+  useEffect(() => { initRipple() }, [])
 
   const updateState = (updates) => {
     setState(prev => {
