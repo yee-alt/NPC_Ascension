@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- 用这个页面在浏览器里生成图标PNG，在本地打开即可，用完可删除 -->
+<html>
+<head><title>生成图标</title></head>
+<body>
+<p>点击按钮生成图标，然后右键保存到 public 文件夹</p>
+<button onclick="gen(192)">生成 icon-192.png</button>
+<button onclick="gen(512)">生成 icon-512.png</button>
+<br><br>
+<canvas id="c"></canvas>
+<br>
+<a id="dl" style="display:none">下载</a>
+
+<script>
+function gen(size) {
+  const canvas = document.getElementById('c')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const s = size
+
+  // 背景
+  ctx.fillStyle = '#05050c'
+  ctx.fillRect(0, 0, s, s)
+
+  // 圆形金色边框
+  ctx.strokeStyle = '#c8a000'
+  ctx.lineWidth = s * 0.03
+  ctx.beginPath()
+  ctx.arc(s/2, s/2, s * 0.44, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // 外发光
+  const grd = ctx.createRadialGradient(s/2, s/2, s*0.2, s/2, s/2, s*0.48)
+  grd.addColorStop(0, 'rgba(255,215,0,0.08)')
+  grd.addColorStop(1, 'rgba(255,215,0,0)')
+  ctx.fillStyle = grd
+  ctx.beginPath()
+  ctx.arc(s/2, s/2, s * 0.48, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 五角星
+  ctx.fillStyle = '#ffd700'
+  ctx.shadowColor = 'rgba(255,215,0,0.8)'
+  ctx.shadowBlur = s * 0.06
+  ctx.font = `bold ${s * 0.42}px serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('✦', s/2, s/2 + s*0.02)
+
+  // 下载链接
+  const a = document.getElementById('dl')
+  a.href = canvas.toDataURL('image/png')
+  a.download = `icon-${size}.png`
+  a.style.display = 'inline'
+  a.textContent = `下载 icon-${size}.png ↓`
+}
+</script>
+</body>
+</html>
