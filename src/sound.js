@@ -98,13 +98,23 @@ let _zhVoice    = null
 
 const loadVoices = () => {
   const voices = window.speechSynthesis?.getVoices() ?? []
-  // 优先找微软小晓/谷歌中文/任意zh-CN
+
+  // 优先级：
+  // 1. Microsoft Azure Neural（Edge 浏览器 — 自然语调最佳）
+  // 2. Microsoft 标准中文音色（Xiaoxiao / Yunxi / Xiaoyi）
+  // 3. Apple 中文音色（macOS/iOS）
+  // 4. 任意 zh-CN / zh 音色
   _zhVoice = (
-    voices.find(v => v.name.includes('Xiaoxiao')) ||
-    voices.find(v => v.name.includes('Xiaoyi'))   ||
-    voices.find(v => v.name.includes('小'))        ||
-    voices.find(v => v.lang === 'zh-CN')           ||
-    voices.find(v => v.lang.startsWith('zh'))      ||
+    voices.find(v => /Xiaoxiao/.test(v.name) && /(Natural|Online|Neural)/.test(v.name)) ||
+    voices.find(v => /Yunxi/.test(v.name)    && /(Natural|Online|Neural)/.test(v.name)) ||
+    voices.find(v => /Xiaochen/.test(v.name) && /(Natural|Online|Neural)/.test(v.name)) ||
+    voices.find(v => /Xiaoxiao/.test(v.name)) ||
+    voices.find(v => /Yunxi/.test(v.name))    ||
+    voices.find(v => /Xiaoyi/.test(v.name))   ||
+    voices.find(v => /Meijia|小美|Tingting|婷婷/.test(v.name)) ||
+    voices.find(v => /小/.test(v.name) && v.lang === 'zh-CN')  ||
+    voices.find(v => v.lang === 'zh-CN')       ||
+    voices.find(v => v.lang.startsWith('zh'))  ||
     null
   )
   _voiceReady = true
@@ -115,26 +125,41 @@ if (window.speechSynthesis) {
   loadVoices()
 }
 
+/** 构造一个 SpeechSynthesisUtterance（内部工具） */
+const makeUtterance = (text, opts = {}) => {
+  const u  = new SpeechSynthesisUtterance(text)
+  u.lang   = 'zh-CN'
+  u.rate   = opts.rate   ?? 0.82
+  u.pitch  = opts.pitch  ?? 0.75
+  u.volume = opts.volume ?? 0.95
+  if (!_voiceReady) loadVoices()
+  if (_zhVoice) u.voice = _zhVoice
+  return u
+}
+
 /**
- * 朗读文本
- * @param {string} text
- * @param {{ rate?: number, pitch?: number, volume?: number }} opts
+ * 打断当前播报，立即开始朗读新文本（用于场景切换）
  */
 export const speak = (text, opts = {}) => {
   if (_muted) return
   if (!window.speechSynthesis) return
   window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(makeUtterance(text, opts))
+}
 
-  const u      = new SpeechSynthesisUtterance(text)
-  u.lang       = 'zh-CN'
-  u.rate       = opts.rate   ?? 0.82
-  u.pitch      = opts.pitch  ?? 0.75   // 偏低音 → 机械冷酷感
-  u.volume     = opts.volume ?? 0.95
+/**
+ * 将文本加入播报队列（不打断当前播报）
+ * 用于逐行出现时同步触发，每行语音自然衔接
+ */
+export const speakLine = (text, opts = {}) => {
+  if (_muted) return
+  if (!window.speechSynthesis) return
+  window.speechSynthesis.speak(makeUtterance(text, opts))
+}
 
-  if (!_voiceReady) loadVoices()
-  if (_zhVoice) u.voice = _zhVoice
-
-  window.speechSynthesis.speak(u)
+/** 停止所有语音播报 */
+export const cancelSpeak = () => {
+  window.speechSynthesis?.cancel()
 }
 
 // ─── 预设播报台词 ─────────────────────────────────────────────
