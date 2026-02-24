@@ -9,33 +9,57 @@ const BINDING_LINES = [
   '第一阶段任务生成中……',
 ]
 
+// 每行出现时机（ms），与语音节奏对齐（voice rate 0.78）
+const LINE_DELAYS  = [100, 1600, 2700, 3900, 5000]
+const DONE_DELAY   = 6500
+
 export default function SystemChoice({ state, updateState }) {
-  const [bound, setBound]   = useState(false)
-  const [lineIdx, setLineIdx] = useState(0)
+  const [bound, setBound] = useState(false)
+  const [shown, setShown] = useState([])   // 已显示行的索引集合
 
   useEffect(() => {
     if (!bound) return
-    if (lineIdx >= BINDING_LINES.length) {
-      const t = setTimeout(() => updateState({ phase: 'starmap', system: 'rise' }), 600)
-      return () => clearTimeout(t)
+    // 各行按精确延迟逐条出现
+    const lineTimers = LINE_DELAYS.map((delay, i) =>
+      setTimeout(() => setShown(s => [...s, i]), delay)
+    )
+    // 语音在第一行出现后同步开始
+    const voiceTimer = setTimeout(() => voice.bindRise(), 200)
+    // 全部展示完后跳转
+    const doneTimer  = setTimeout(() => updateState({ phase: 'starmap', system: 'rise' }), DONE_DELAY)
+    return () => {
+      lineTimers.forEach(clearTimeout)
+      clearTimeout(voiceTimer)
+      clearTimeout(doneTimer)
     }
-    const t = setTimeout(() => setLineIdx(i => i + 1), 650)
-    return () => clearTimeout(t)
-  }, [bound, lineIdx])
+  }, [bound])
 
   if (bound) {
     return (
       <div className="binding-screen fade-in">
         <div className="binding-glow" />
-        {BINDING_LINES.slice(0, lineIdx).map((line, i) => (
-          <p
-            key={i}
-            className={`fade-in ${i === 2 ? 'binding-system-name' : 'binding-line'}`}
-            style={{ animationDelay: `${i * 0.05}s` }}
-          >
-            {line}
-          </p>
-        ))}
+        <div className="binding-scan-sweep" />
+        <div className="binding-frame">
+          <span className="bc bc-tl" /><span className="bc bc-tr" />
+          <span className="bc bc-bl" /><span className="bc bc-br" />
+
+          {BINDING_LINES.map((line, i) =>
+            shown.includes(i) && (
+              <p
+                key={i}
+                className={`binding-entry ${i === 2 ? 'binding-system-name' : 'binding-line'}`}
+              >
+                {line}
+              </p>
+            )
+          )}
+
+          <div className="binding-progress">
+            {BINDING_LINES.map((_, i) => (
+              <span key={i} className={`binding-dot ${shown.includes(i) ? 'active' : ''}`} />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -65,9 +89,7 @@ export default function SystemChoice({ state, updateState }) {
             className="btn btn-primary"
             onClick={() => {
               sfx.bind()
-              setTimeout(() => voice.bindRise(), 400)
               setBound(true)
-              setLineIdx(0)
             }}
           >
             ⚡ 绑定《爽文女主觉醒系统》
