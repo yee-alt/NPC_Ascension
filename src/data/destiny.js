@@ -3,7 +3,7 @@ export const NPC_TYPES = [
   {
     id: 'npc_jia',
     name: '路人甲',
-    tag: '低阶命格 · 211大学生 · 遭遇职场PUA',
+    tag: '低阶命格 · 农村出身，努力考上211 · 27岁毕业遭遇互联网寒冬 · 大厂梦碎，小公司遇PUA老板',
     rarity: 'npc',
     rarityLabel: '低阶命格',
     prob: '爽文概率：0.1%',
